@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain Clash · Choose your fighter</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="roster.css"><link rel="stylesheet" href="projectiles.css"><script src="characters.js" defer></script><script src="game.js" defer></script>
+</head><body>
+<main class="game">
+  <header><span class="eyebrow">LOCAL TWO-PLAYER / FAN-MADE BATTLE</span><h1>DOMAIN <span>CLASH</span></h1><p>Choose your sorcerer. Win the board. Unleash your technique.</p></header>
+  <section id="character-select" class="character-select" aria-labelledby="select-title">
+    <div class="selection-heading"><span class="eyebrow">01 / SET THE MATCHUP</span><h2 id="select-title">Who will face off?</h2><p>Five fighters. One signature attack each. The same five-hit challenge.</p></div>
+    <div class="selection-grid">
+      <article class="selection-card" id="selection-x"><label for="choose-x">PLAYER 01</label><select id="choose-x" aria-describedby="selection-error"></select><img id="preview-x" src="gojo.svg" alt="Gojo portrait"><p id="bio-x"></p><div id="moves-x" class="move-chips"></div><label class="upload" for="portrait-x">Use your own portrait<input type="file" id="portrait-x" accept="image/png,image/jpeg,image/webp"></label><button class="restore-portrait" id="restore-x" type="button">Restore default portrait</button><p id="upload-status-x" class="upload-status" role="status"></p></article>
+      <article class="selection-card" id="selection-o"><label for="choose-o">PLAYER 02</label><select id="choose-o" aria-describedby="selection-error"></select><img id="preview-o" src="sukuna.svg" alt="Sukuna portrait"><p id="bio-o"></p><div id="moves-o" class="move-chips"></div><label class="upload" for="portrait-o">Use your own portrait<input type="file" id="portrait-o" accept="image/png,image/jpeg,image/webp"></label><button class="restore-portrait" id="restore-o" type="button">Restore default portrait</button><p id="upload-status-o" class="upload-status" role="status"></p></article>
+    </div>
+    <p id="selection-error" role="status" aria-live="polite"></p><button class="primary" id="start-battle">Enter the arena</button><p class="selection-note">Portrait uploads stay in this browser tab. PNG, JPG or WebP, up to 5 MB.</p>
+  </section>
+  <div id="battle-content" hidden>
+  <section class="arena" aria-label="Fighters and health">
+    <article class="fighter active" id="player-x"><div class="portrait"><img id="fighter-image-x" src="gojo.svg" alt="Gojo portrait"><span>PLAYER 01</span></div><div class="fighter-info"><span class="technique" id="fighter-title-x">THE HONORED ONE</span><h2 id="fighter-name-x">Gojo</h2><div class="health" id="health-x" role="meter" aria-label="Gojo health" aria-valuemin="0" aria-valuemax="5" aria-valuenow="5"></div><p><strong id="hp-x">5</strong> / 5 HP <span>Hits landed: <b id="score-x">0</b></span></p></div></article>
+    <div class="versus">VS</div>
+    <article class="fighter" id="player-o"><div class="portrait"><img id="fighter-image-o" src="sukuna.svg" alt="Sukuna portrait"><span>PLAYER 02</span></div><div class="fighter-info"><span class="technique" id="fighter-title-o">KING OF CURSES</span><h2 id="fighter-name-o">Sukuna</h2><div class="health" id="health-o" role="meter" aria-label="Sukuna health" aria-valuemin="0" aria-valuemax="5" aria-valuenow="5"></div><p><strong id="hp-o">5</strong> / 5 HP <span>Hits landed: <b id="score-o">0</b></span></p></div></article>
+  </section>
+  <section class="play-area" aria-label="Game">
+    <div class="round-label"><span>ROUND <b id="round-number">01</b></span><span>DRAWS <b id="score-draw">0</b></span></div>
+    <p id="game-status" role="status" aria-live="polite" aria-atomic="true">Gojo's turn</p>
+    <div class="board" id="board" role="group" aria-label="Tic-tac-toe battle board">
+      <button class="cell" id="cell-0-0" data-index="0" aria-label="Row 1, column 1: empty"></button>
+      <button class="cell" id="cell-0-1" data-index="1" aria-label="Row 1, column 2: empty"></button>
+      <button class="cell" id="cell-0-2" data-index="2" aria-label="Row 1, column 3: empty"></button>
+      <button class="cell" id="cell-1-0" data-index="3" aria-label="Row 2, column 1: empty"></button>
+      <button class="cell" id="cell-1-1" data-index="4" aria-label="Row 2, column 2: empty"></button>
+      <button class="cell" id="cell-1-2" data-index="5" aria-label="Row 2, column 3: empty"></button>
+      <button class="cell" id="cell-2-0" data-index="6" aria-label="Row 3, column 1: empty"></button>
+      <button class="cell" id="cell-2-1" data-index="7" aria-label="Row 3, column 2: empty"></button>
+      <button class="cell" id="cell-2-2" data-index="8" aria-label="Row 3, column 3: empty"></button>
+    </div>
+    <button class="primary" id="new-round" disabled>Win the round to attack</button><button class="reset" id="reset-match">Reset battle</button><button class="reset" id="change-fighters">Change fighters (resets battle)</button>
+  </section>
+  <section class="battle-log" aria-label="Last attack"><span>BATTLE LOG</span><p id="battle-log">The strongest face off. Your move.</p></section>
+  </div>
+  <footer><strong>Three in a line. Your attack fires automatically.</strong><p>Win a round to launch your signature attack and land 1 hit. Take 5 hits and you lose.<br>Draws deal no damage. The starting player alternates each round.</p><span>Original vector fan art · <a href="SOURCES.md">Moveset references</a> · No sign-in</span></footer>
+</main>
+<div id="attack-overlay" class="attack-overlay" hidden>
+  <section class="attack-scene" role="dialog" aria-modal="true" aria-labelledby="attack-title" aria-describedby="attack-description" tabindex="-1">
+    <div class="domain-art" aria-hidden="true"><div class="orbital one"></div><div class="orbital two"></div><div class="orbital three"></div><div class="slash s1"></div><div class="slash s2"></div><div class="slash s3"></div></div>
+    <span class="attack-kicker" id="attack-kicker">DOMAIN EXPANSION</span><h2 id="attack-title"></h2><p id="attack-description"></p>
+    <div class="attack-fighters"><div class="attacker"><img id="attacker-image" src="gojo.svg" alt=""><span id="attacker-name"></span></div><div class="attack-projectile" aria-hidden="true"></div><span class="impact">−1 HP</span><div class="defender"><img id="defender-image" src="sukuna.svg" alt=""><span id="defender-name"></span></div></div>
+    <p id="attack-result"></p><button id="skip-animation">Continue <span aria-hidden="true">→</span></button>
+  </section>
+</div>
+</body></html>

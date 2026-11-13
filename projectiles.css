@@ -1,0 +1,28 @@
+/* Shared timing: prepare, travel, impact at 1.7s, then settle. */
+.attack-overlay .attack-fighters{width:min(480px,100%);margin:30px auto;justify-content:space-between;gap:0;isolation:isolate}
+.attack-overlay .attacker,.attack-overlay .defender{position:relative;z-index:1}
+.attack-overlay .attacker{animation:attack-charge 1.3s ease-out both}
+.attack-overlay .defender{animation:attack-hit .65s 1.7s both}
+.attack-overlay .domain-art{opacity:.12}
+.attack-projectile{position:absolute;z-index:2;left:20%;top:38%;width:clamp(32px,9vw,64px);aspect-ratio:1;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 40% 35%,white 0 7%,#f7cdff 15%,#c14dff 40%,#6822d1 70%,#412587 85%);box-shadow:0 0 18px var(--energy),0 0 45px var(--energy);animation:attack-flight 3.8s linear both;transform:translate(-50%,-50%)}
+.attack-projectile::before,.attack-projectile::after{content:'';position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--energy);transform:rotate(35deg) scaleY(.55)}
+.attack-projectile::after{transform:rotate(-45deg) scaleY(.55);border-color:#ff91ce}
+.attack-overlay .defender::after{content:'';position:absolute;inset:-12px;pointer-events:none;opacity:0;background:repeating-conic-gradient(from 10deg,transparent 0deg 25deg,var(--energy) 27deg 30deg,transparent 32deg 45deg);border-radius:50%;animation:attack-burst .65s 1.7s both}
+.attack-overlay .impact{position:absolute;left:50%;top:47%;z-index:3;font-size:24px;text-shadow:0 2px 10px #090411;animation:place .3s 1.7s both}
+/* Yuji: black cursed-energy strike with a red jagged corona. */
+.effect-black-flash .attack-projectile{background:radial-gradient(circle,#08030c 35%,#62152c 60%,#ff4777 75%,#ffb1bf);border:3px solid #ff8d9f}
+.effect-black-flash .attack-projectile::before{inset:-17px;border:0;border-radius:0;background:#ff557b;clip-path:polygon(50% 0,58% 30%,90% 12%,70% 45%,100% 55%,67% 62%,80% 95%,52% 75%,22% 100%,30% 65%,0 45%,32% 37%);transform:none;z-index:-1}
+/* Sukuna: a traveling blade of cursed energy. */
+.effect-slashes .attack-projectile{border-radius:0;background:linear-gradient(110deg,transparent 20%,#ff7791 38%,white 48%,#ff7791 58%,transparent 75%);clip-path:polygon(55% 0,100% 0,44% 100%,0 100%);width:clamp(35px,10vw,75px);height:100px}
+.effect-slashes .attack-projectile::before,.effect-slashes .attack-projectile::after{display:none}
+/* Megumi: a winged shikigami silhouette carried on lightning. */
+.effect-lightning .attack-projectile{width:clamp(65px,16vw,110px);height:70px;aspect-ratio:auto;border-radius:0;background:linear-gradient(#e7c7ff,#ad80ff 45%,#634293);clip-path:polygon(0 5%,35% 25%,47% 45%,49% 30%,57% 26%,68% 36%,58% 43%,67% 55%,100% 25%,83% 73%,60% 68%,57% 100%,42% 77%,20% 64%);filter:drop-shadow(0 0 8px #b68bff)}
+.effect-lightning .attack-projectile::before,.effect-lightning .attack-projectile::after{display:none}
+/* Mahoraga: a broad gold-white sword arc. */
+.effect-world-slash .attack-projectile{width:clamp(65px,15vw,110px);height:100px;aspect-ratio:auto;border-radius:50%;background:transparent;border-right:14px solid #fff4bd;box-shadow:13px 0 18px #d7b967;rotate:-15deg}
+.effect-world-slash .attack-projectile::before,.effect-world-slash .attack-projectile::after{display:none}
+@keyframes attack-charge{0%{filter:brightness(1)}65%{filter:brightness(1.6);transform:translateX(-4px)}100%{filter:brightness(1);transform:translateX(0)}}
+@keyframes attack-flight{0%{left:20%;opacity:0;scale:.05}8%{opacity:1;scale:.3}30%{left:25%;scale:1}44.7%{left:79%;opacity:1;scale:1.05}48%{left:82%;opacity:.8;scale:1.6}55%,100%{left:82%;opacity:0;scale:2}}
+@keyframes attack-hit{0%{transform:translateX(0);filter:brightness(1)}20%{transform:translateX(13px) rotate(5deg);filter:brightness(1.8)}45%{transform:translateX(-4px) rotate(-2deg)}70%{transform:translateX(5px)}100%{transform:translateX(0);filter:brightness(.7)}}
+@keyframes attack-burst{0%{opacity:0;transform:scale(.5)}20%{opacity:.8}100%{opacity:0;transform:scale(1.65)}}
+@media(prefers-reduced-motion:reduce){.attack-overlay .attack-projectile,.attack-overlay .defender::after{display:none}.attack-overlay .impact{position:static;font-size:18px}.attack-overlay .attack-fighters{gap:12px}}

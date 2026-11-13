@@ -1,0 +1,22 @@
+# Dependencies and local tooling
+node_modules/
+.idea/
+.vscode/
+*.class
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Generated files and OS metadata
+coverage/
+test-results/
+playwright-report/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+Desktop.ini

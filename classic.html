@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tic Tac Toe · Two players</title>
+  <link rel="stylesheet" href="classic-styles.css">
+  <script src="classic-game.js" defer></script>
+</head>
+<body>
+  <main class="game">
+    <header><span class="eyebrow">A LITTLE FRIENDLY COMPETITION</span><h1>Tic, tac, <span>your turn.</span></h1><p>Two players. One board. Make your move.</p></header>
+    <section class="scoreboard" aria-label="Match scores">
+      <div class="player active" id="player-x"><span class="symbol x">X</span><span>Player X<strong id="score-x">0</strong></span></div>
+      <div class="draw-score"><strong id="score-draw">0</strong><span>Draws</span></div>
+      <div class="player" id="player-o"><span class="symbol o">O</span><span>Player O<strong id="score-o">0</strong></span></div>
+    </section>
+    <section class="play-area" aria-label="Game">
+      <div class="status-line"><span id="status-dot" aria-hidden="true"></span><p id="game-status" role="status" aria-live="polite" aria-atomic="true">Player X’s turn</p></div>
+      <div class="board" id="board" role="group" aria-label="Tic-tac-toe board">
+        <button class="cell" id="cell-0-0" data-index="0" aria-label="Row 1, column 1: empty"></button>
+        <button class="cell" id="cell-0-1" data-index="1" aria-label="Row 1, column 2: empty"></button>
+        <button class="cell" id="cell-0-2" data-index="2" aria-label="Row 1, column 3: empty"></button>
+        <button class="cell" id="cell-1-0" data-index="3" aria-label="Row 2, column 1: empty"></button>
+        <button class="cell" id="cell-1-1" data-index="4" aria-label="Row 2, column 2: empty"></button>
+        <button class="cell" id="cell-1-2" data-index="5" aria-label="Row 2, column 3: empty"></button>
+        <button class="cell" id="cell-2-0" data-index="6" aria-label="Row 3, column 1: empty"></button>
+        <button class="cell" id="cell-2-1" data-index="7" aria-label="Row 3, column 2: empty"></button>
+        <button class="cell" id="cell-2-2" data-index="8" aria-label="Row 3, column 3: empty"></button>
+      </div>
+      <button class="primary" id="new-round">Restart round <span aria-hidden="true">↻</span></button>
+      <button class="reset" id="reset-match">Reset match &amp; scores</button>
+    </section>
+    <footer><strong>How to play</strong><p>X starts each round. Take turns choosing an empty square.<br>Get three in a row, column, or diagonal to win.</p><span>LOCAL TWO-PLAYER · NO SIGN-IN</span></footer>
+  </main>
+</body>
+</html>
