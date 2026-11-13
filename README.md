@@ -13,7 +13,6 @@ Built with **HTML, CSS, and JavaScript**. Play directly in a browser—no instal
 - Custom local portraits used on the board and attack screens.
 - Keyboard controls, screen-reader labels, and reduced-motion support.
 - Responsive layout for smaller screens.
-- Dependency-free logic checks and a GitHub Actions test workflow.
 
 ## Fighters
 
@@ -34,8 +33,6 @@ Every attack deals **one hit**. Effects are stylized adaptations, not a reproduc
 Download the repository using **Code → Download ZIP**, extract it, and open [`index.html`](index.html) in a modern browser. Keep the other files beside it so scripts, styles, and portraits load correctly.
 
 ### Clone
-
-Once this repository is published:
 
 ```bash
 git clone https://github.com/jcharlesarun/jjk-tic-tac-toe.git
@@ -87,32 +84,27 @@ On the selection screen, use **Use your own portrait** for either player.
 
 Images stay in the current browser tab; they are not sent to a server. Refreshing or closing the page resets the match and custom portraits. There are no accounts, online multiplayer, sound effects, or saved progress.
 
-## Run the checks
+## Testing
 
-With Node.js and npm installed:
+The project includes **55 unit tests** for the game rules and an integration suite covering the game controls and battle flow.
+
+| Test area | What is checked |
+| --- | --- |
+| Board rules | Valid and invalid moves, occupied squares, all 16 winning-line cases, draws, and a win on the final square |
+| Battles | All 20 character matchups, automatic signature attacks, five-hit victories, and health tracking |
+| Round flow | Alternating starting players, next rounds, resets, and preserving health between rounds |
+| Attack timing | Damage at impact, preventing duplicate hits, skipping attacks, and cancelling pending hits on reset |
+| Portraits and controls | File types and sizes, image-loading failures, overlapping uploads, keyboard handling, and reduced motion |
+
+Run all tests with **Node.js 24+**:
 
 ```bash
 npm test
 ```
 
-Or run the test script directly:
+No dependency installation is needed. For an optional coverage report, run `npm run test:coverage` and open `coverage/index.html`.
 
-```bash
-node game.test.cjs
-```
-
-No `npm install` is required; the checks use Node.js built-in modules.
-
-Coverage includes:
-
-- All **20 ordered character matchups**.
-- All **16 winning-line cases** across the two player positions.
-- Each fighter's automatic attack and five-hit victory.
-- Impact timing, single-hit enforcement, skips, Escape, and reset cancellation.
-- Draws, alternating starts, reduced-motion behavior, and portrait handling.
-- Required local asset files.
-
-The checks use a **DOM substitute**. They verify game behavior but do not verify browser rendering or animation appearance. The [GitHub Actions workflow](.github/workflows/test.yml) is configured to run them on pushes and pull requests.
+These are automated logic and simulated UI checks; real-browser appearance and animation playback are not covered.
 
 ## Project structure
 
@@ -120,13 +112,16 @@ The checks use a **DOM substitute**. They verify game behavior but do not verify
 jjk-tic-tac-toe/
 ├── index.html              # Character selection, board, and attack screen
 ├── characters.js           # Five-fighter roster and signature attacks
-├── game.js                 # Turns, rounds, health, uploads, and attack timing
+├── rules.js                # Game rules and battle state; no DOM or timers
+├── game.js                 # Page updates, uploads, and attack timing
 ├── styles.css              # Base game appearance
 ├── roster.css              # Selection screen and technique effects
 ├── projectiles.css         # Projectile travel and impact animations
 ├── *.svg                   # Original character portraits
-├── game.test.cjs            # Dependency-free behavior checks
-├── package.json            # npm test command
+├── game.test.cjs            # DOM-substitute integration checks
+├── tests/rules.test.cjs     # Direct unit tests for the shared rules
+├── scripts/                # Coverage runner and report generation
+├── package.json            # npm test and coverage commands
 ├── classic.html            # Original plain X/O game
 ├── classic-game.js         # Classic game logic
 ├── classic-styles.css      # Classic game appearance
@@ -134,27 +129,8 @@ jjk-tic-tac-toe/
 └── .github/workflows/      # Automated checks
 ```
 
-## SDET learning project
-
-The game also provides a small application for practising test design, negative testing, boundary cases, data-driven checks, and future **Java + Selenium + TestNG** browser automation. Java browser tests are not included yet.
-
-Useful stable element IDs:
-
-| Area | IDs |
-| --- | --- |
-| Selection | `choose-x`, `choose-o`, `start-battle` |
-| Board | `cell-0-0` through `cell-2-2` (zero-based row and column) |
-| Status | `game-status`, `round-number` |
-| Health | `hp-x`, `hp-o`, `health-x`, `health-o` |
-| Scores | `score-x`, `score-o`, `score-draw` |
-| Attack screen | `attack-overlay`, `attack-title`, `skip-animation` |
-| Match controls | `new-round`, `reset-match`, `change-fighters` |
-| Portraits | `portrait-x`, `portrait-o`, `restore-x`, `restore-o` |
-
-Occupied cells expose a `data-player` attribute with the fighter's name. Browser tests should wait for the attack overlay to close, or select **Continue**, before starting the next round.
-
 ## Credits
 
-This is an **unofficial fan-made learning project**, inspired by Jujutsu Kaisen and community-documented Jujutsu Shenanigans movesets. Character names and source material belong to their respective owners. No official affiliation is implied.
+This is an **unofficial fan-made game**, inspired by Jujutsu Kaisen and community-documented Jujutsu Shenanigans movesets. Character names and source material belong to their respective owners. No official affiliation is implied.
 
 Default portraits are original stylized SVG fan art, and attacks use CSS effects rather than anime clips. Reference links and implementation adaptations are documented in [SOURCES.md](SOURCES.md).

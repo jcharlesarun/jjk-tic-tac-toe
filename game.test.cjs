@@ -3,24 +3,25 @@ const fs = require('node:fs'), vm = require('node:vm'), assert = require('node:a
 const html = fs.readFileSync(`${__dirname}/index.html`, 'utf8');
 function element(index) {
   const attrs = {}; let text='', inner='';
-  return {dataset:{index},style:{setProperty(){}},disabled:false,hidden:true,value:'',files:[],
+  return {dataset:{index},style:{setProperty(){}},disabled:false,hidden:false,value:'',files:[],
     get textContent(){return text},set textContent(value){text=String(value)},
     get innerHTML(){return inner},set innerHTML(value){inner=value;text=''},
     classList:{add(){},toggle(){}},setAttribute(k,v){attrs[k]=String(v)},getAttribute(k){return attrs[k]},removeAttribute(k){delete attrs[k]},
-    addEventListener(event,handler){this[event]=handler},focus(){}
+    addEventListener(event,handler){this[event]=handler},focus(){this.focused=true}
   };
 }
-const elements=Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],element()]));
+const elements=Object.fromEntries([...html.matchAll(/<[^>]*\bid="([^"]+)"[^>]*>/g)].map(m=>[m[1],Object.assign(element(),{hidden:/\bhidden\b/.test(m[0])})]));
 const cells=Array.from({length:9},(_,i)=>element(i)), game=element(), scene=element(), events={};
-const timers=new Map(); let timerId=0, reducedMotion=false;
+const timers=new Map(); let timerId=0, reducedMotion=false, deferImages=false;
+const pendingImages=[], revokedUrls=[];
 const context=vm.createContext({document:{querySelectorAll:()=>cells,querySelector:s=>s==='.game'?game:scene,
   getElementById(id){assert.ok(elements[id],`Missing element ${id}`);return elements[id]},addEventListener:(e,h)=>events[e]=h},
   window:{matchMedia:()=>({matches:reducedMotion})},
   setTimeout(handler,delay){const id=++timerId;timers.set(id,{handler,delay});return id},clearTimeout:id=>timers.delete(id),
-  URL:{createObjectURL:file=>file.corrupt?'blob:bad':'blob:portrait',revokeObjectURL(){}},
-  Image:class{set src(value){value==='blob:bad'?this.onerror():this.onload()}}
+  URL:{createObjectURL:file=>file.corrupt?'blob:bad':file.url||'blob:portrait',revokeObjectURL(url){revokedUrls.push(url)}},
+  Image:class{set src(value){if(deferImages)pendingImages.push(this);else value==='blob:bad'?this.onerror():this.onload()}}
 });
-for(const file of ['characters.js','game.js']) vm.runInContext(fs.readFileSync(`${__dirname}/${file}`,'utf8'),context);
+for(const file of ['characters.js','rules.js','game.js']) vm.runInContext(fs.readFileSync(`${__dirname}/${file}`,'utf8'),context,{filename:require('node:path').join(__dirname,file)});
 const roster=vm.runInContext('roster',context);
 const click=id=>elements[id].click(), move=i=>cells[i].click(), play=seq=>seq.forEach(move);
 const hp=p=>Number(elements[`hp-${p}`].textContent), status=()=>elements['game-status'].textContent;
@@ -30,6 +31,9 @@ function select(first='gojo',second='sukuna'){
   elements['choose-x'].change(); click('start-battle');
 }
 assert.ok(!html.includes('id="attack-picker"'));
+assert.equal(elements['character-select'].hidden,false);
+assert.equal(elements['battle-content'].hidden,true);
+events.keydown({key:'Escape',preventDefault(){throw Error('Inactive game must not capture keys')}});
 move(0); assert.equal(cells[0].innerHTML,''); // No moves before selection.
 select(); move(4); move(4); assert.equal(status(),"Sukuna's turn");
 assert.equal(cells[4].getAttribute('data-player'),'Gojo');
@@ -92,6 +96,41 @@ assert.ok(elements['upload-status-x'].textContent.includes('could not be opened'
 elements['portrait-x'].files=[{type:'image/png',size:100}];elements['portrait-x'].change();click('start-battle');
 play([0,3,1,4,2]);assert.equal(elements['attacker-image'].src,'blob:portrait');assert.ok(cells[0].innerHTML.includes('blob:portrait'));
 click('skip-animation');click('change-fighters');click('restore-x');assert.equal(elements['preview-x'].src,'gojo.svg');
+// Boundary sizes, cancelling the file picker, and portrait replacement.
+elements['portrait-x'].files=[];elements['portrait-x'].change();
+elements['portrait-x'].files=[{type:'image/png',size:5*1024*1024+1}];elements['portrait-x'].change();
+assert.ok(elements['upload-status-x'].textContent.includes('under 5 MB'));
+elements['portrait-x'].files=[{type:'image/png',size:5*1024*1024,url:'blob:limit'}];elements['portrait-x'].change();
+assert.equal(elements['preview-x'].src,'blob:limit');
+elements['portrait-x'].files=[{type:'image/jpeg',size:100,url:'blob:replacement'}];elements['portrait-x'].change();
+assert.ok(revokedUrls.includes('blob:limit'));assert.equal(elements['preview-x'].src,'blob:replacement');
+click('restore-x');click('restore-x');assert.equal(elements['preview-x'].src,'gojo.svg');
+// Async races: starting waits for image decoding; changing fighters discards stale results.
+deferImages=true;
+elements['portrait-x'].files=[{type:'image/webp',size:100,url:'blob:stale'}];elements['portrait-x'].change();
+assert.equal(elements['start-battle'].disabled,true);click('start-battle');assert.equal(elements['battle-content'].hidden,true);
+elements['choose-x'].value='yuji';elements['choose-x'].change();pendingImages.shift().onload();
+assert.equal(elements['preview-x'].src,'yuji.svg');assert.ok(revokedUrls.includes('blob:stale'));
+elements['portrait-o'].files=[{type:'image/png',size:100,url:'blob:wait'}];elements['portrait-o'].change();
+click('start-battle');assert.equal(elements['battle-content'].hidden,true);
+pendingImages.shift().onload();assert.equal(elements['start-battle'].disabled,false);
+// A stale failure must not overwrite a newer upload's loading message.
+elements['portrait-x'].files=[{type:'image/png',size:100,url:'blob:old-error'}];elements['portrait-x'].change();
+elements['portrait-x'].files=[{type:'image/png',size:100,url:'blob:latest'}];elements['portrait-x'].change();
+pendingImages.shift().onerror();assert.equal(elements['upload-status-x'].textContent,'Loading portrait...');
+pendingImages.shift().onload();assert.equal(elements['preview-x'].src,'blob:latest');
+deferImages=false;
+// Invalid selections never start a battle.
+elements['choose-x'].value='missing';elements['choose-x'].change();click('start-battle');
+assert.equal(elements['battle-content'].hidden,true);assert.equal(elements['start-battle'].disabled,true);
+elements['choose-x'].value='gojo';elements['choose-o'].value='missing';elements['choose-o'].change();click('start-battle');
+assert.equal(elements['battle-content'].hidden,true);
+// Keyboard focus stays on Continue during the attack and returns afterward.
+select();play([0,3,1,4,2]);let prevented=false;
+events.keydown({key:'Tab',preventDefault(){prevented=true}});
+assert.equal(prevented,true);assert.equal(elements['skip-animation'].focused,true);
+events.keydown({key:'a',preventDefault(){throw Error('Unrelated keys must not be captured')}});
+click('skip-animation');assert.equal(elements['new-round'].focused,true);
 for(const m of html.matchAll(/(?:src|href)="([^"]+)"/g))fs.readFileSync(`${__dirname}/${m[1]}`);
 for(const fighter of Object.values(roster))fs.readFileSync(`${__dirname}/${fighter.image}`);
 console.log(`PASS: ${matchups} matchups, ${winCases} win patterns, 5 automatic signature attacks, all fighters' five-hit victories, impact timing, skip/Escape/reset, draws, reduced motion, portraits and local assets. DOM-substitute checks only.`);

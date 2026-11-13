@@ -1,5 +1,5 @@
 'use strict';
-const winningLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const battle = new GameRules.Battle();
 let fighters = { X: roster.gojo, O: roster.sukuna };
 const $ = id => document.getElementById(id);
 const cells = [...document.querySelectorAll('.cell')];
@@ -20,7 +20,16 @@ const portraits = { X: {}, O: {} };
 const uploadVersions = { X: 0, O: 0 };
 const uploadsLoading = { X: false, O: false };
 function portrait(player) { return portraits[player][fighters[player].id] || fighters[player].image; }
-function health(player) { return 5 - scores[player === 'X' ? 'O' : 'X']; }
+function health(player) { return battle.health(player); }
+function syncBattle() {
+  const state = battle.snapshot();
+  board = state.board;
+  currentPlayer = state.currentPlayer;
+  round = state.round;
+  roundOver = state.phase !== 'playing';
+  matchOver = state.winner !== null;
+  Object.assign(scores, state.scores);
+}
 function renderScores() {
   for (const player of ['X', 'O']) {
     const suffix = player.toLowerCase();
@@ -39,9 +48,7 @@ function renderPlayers() {
 }
 function clearRound() {
   pendingWinner = null;
-  board = Array(9).fill('');
-  currentPlayer = round % 2 === 1 ? 'X' : 'O';
-  roundOver = false;
+  syncBattle();
   cells.forEach((cell, index) => {
     cell.innerHTML = '';
     cell.disabled = false;
@@ -76,7 +83,7 @@ function showAttack(winner, selectedMove) {
   const attacker = fighters[winner], defender = fighters[loser];
   const move = selectedMove.name;
   animationActive = true;
-  overlay.className = `attack-overlay effect-${selectedMove.effect} ${matchOver ? 'champion' : ''}`;
+  overlay.className = `attack-overlay effect-${selectedMove.effect}`;
   scene.style.setProperty('--energy', attacker.color);
   $('attack-kicker').textContent = selectedMove.kind;
   $('attack-title').textContent = move;
@@ -85,12 +92,8 @@ function showAttack(winner, selectedMove) {
   $('defender-image').src = portrait(loser);
   $('attacker-name').textContent = attacker.name;
   $('defender-name').textContent = defender.name;
-  $('attack-result').textContent = matchOver ? `${defender.name} is defeated. ${attacker.name} wins the battle!` : `${defender.name} has ${health(loser)} / 5 HP remaining.`;
-  $('battle-log').textContent = `${attacker.name} used ${move}. ${defender.name} took 1 hit.${matchOver ? ' Battle over!' : ''}`;
-  if (pendingImpact) {
-    $('attack-result').textContent = `${attacker.name} is preparing ${move}...`;
-    $('battle-log').textContent = `${attacker.name} is preparing ${move}.`;
-  }
+  $('attack-result').textContent = `${attacker.name} is preparing ${move}...`;
+  $('battle-log').textContent = `${attacker.name} is preparing ${move}.`;
   roundButton.disabled = true;
   overlay.hidden = false;
   document.querySelector('.game').inert = true;
@@ -98,29 +101,28 @@ function showAttack(winner, selectedMove) {
   animationTimer = setTimeout(dismissAttack, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1500 : 3800);
 }
 function playMove(index) {
-  if (!battleStarted || roundOver || matchOver || animationActive || !Number.isInteger(index) || index < 0 || index > 8 || board[index]) return;
-  board[index] = currentPlayer;
-  const fighter = fighters[currentPlayer], cell = cells[index];
-  cell.innerHTML = `<img src="${portrait(currentPlayer)}" alt="" draggable="false">`;
-  cell.classList.add(currentPlayer.toLowerCase());
+  if (!battleStarted || animationActive) return;
+  const result = battle.play(index);
+  if (!result.accepted) return;
+  syncBattle();
+  const fighter = fighters[result.player], cell = cells[index];
+  cell.innerHTML = `<img src="${portrait(result.player)}" alt="" draggable="false">`;
+  cell.classList.add(result.player.toLowerCase());
   cell.setAttribute('data-player', fighter.name);
   cell.disabled = true;
   cell.setAttribute('aria-label', `Row ${Math.floor(index / 3) + 1}, column ${index % 3 + 1}: ${fighter.name}`);
-  const winningLine = winningLines.find(line => line.every(position => board[position] === currentPlayer));
+  const winningLine = result.winningLine;
   if (winningLine) {
-    roundOver = true;
-    pendingWinner = currentPlayer;
+    pendingWinner = result.player;
     winningLine.forEach(position => cells[position].classList.add('winning'));
     roundButton.disabled = true;
     performAttack();
-  } else if (board.every(Boolean)) {
-    roundOver = true; scores.draw++;
+  } else if (result.draw) {
     statusText.textContent = 'Draw! No damage dealt.';
     $('battle-log').textContent = 'A stalemate. Both fighters keep their remaining health.';
     roundButton.textContent = 'Next round'; roundButton.disabled = false;
     renderScores();
   } else {
-    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
     statusText.textContent = `${fighters[currentPlayer].name}'s turn`;
   }
   if (roundOver) cells.forEach(square => { square.disabled = true; });
@@ -130,8 +132,7 @@ function resetBattle() {
   clearTimeout(impactTimer); pendingImpact = null;
   clearTimeout(animationTimer); animationActive = false; overlay.hidden = true;
   document.querySelector('.game').inert = false;
-  scores.X = scores.O = scores.draw = 0;
-  round = 1; matchOver = false;
+  battle.reset();
   $('battle-log').textContent = 'The strongest face off. Your move.';
   clearRound();
 }
@@ -141,8 +142,8 @@ function performAttack() {
   pendingWinner = null; // Consume the round win once; repeated clicks cannot deal extra damage.
   const selectedMove = fighters[winner].moves[0];
   const applyDamage = () => {
-    scores[winner]++;
-    matchOver = scores[winner] === 5;
+    if (!battle.applyHit()) return;
+    syncBattle();
     statusText.textContent = matchOver ? `${fighters[winner].name} wins the battle!` : `${fighters[winner].name} wins the round!`;
     roundButton.textContent = matchOver ? 'New battle' : 'Next round';
     renderScores();
@@ -170,8 +171,9 @@ function updateSelection() {
     $('selection-' + suffix).style.setProperty('--accent', fighter.color);
   }
   const duplicate = $('choose-x').value === $('choose-o').value;
-  $('selection-error').textContent = duplicate ? 'Choose two different fighters to enter the arena.' : '';
-  $('start-battle').disabled = duplicate || uploadsLoading.X || uploadsLoading.O;
+  const invalid = !roster[$('choose-x').value] || !roster[$('choose-o').value];
+  $('selection-error').textContent = invalid ? 'Select a valid fighter for each player.' : duplicate ? 'Choose two different fighters to enter the arena.' : '';
+  $('start-battle').disabled = invalid || duplicate || uploadsLoading.X || uploadsLoading.O;
 }
 function enterBattle() {
   const first = roster[$('choose-x').value], second = roster[$('choose-o').value];
@@ -231,7 +233,7 @@ function uploadPortrait(player) {
 cells.forEach(cell => cell.addEventListener('click', () => playMove(Number(cell.dataset.index))));
 roundButton.addEventListener('click', () => {
   if (animationActive || pendingWinner || !roundOver || !battleStarted) return;
-  if (matchOver) resetBattle(); else { round++; clearRound(); }
+  if (matchOver) resetBattle(); else if (battle.nextRound()) clearRound();
 });
 $('reset-match').addEventListener('click', resetBattle);
 $('skip-animation').addEventListener('click', dismissAttack);
